@@ -1,0 +1,44 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go build artifacts
+bin/
+build/
+
+# Go modules (biarkan go.mod & go.sum ikut dipush)
+vendor/
+
+# Logs
+*.log
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Docker stuff
+.env
+*.env.*
+docker-compose.override.yml
+
+# PostgreSQL dumps
+*.sql
+*.dump
+
+# Swagger generated
+docs/swagger.json
+docs/swagger.yaml
+
+# Coverage/test files
+coverage.*
+*.coverprofile
