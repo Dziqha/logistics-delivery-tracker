@@ -1,11 +1,13 @@
 package controllers
 
 import (
+	"encoding/json"
+
 	"github.com/Dziqha/logistics-delivery-tracker/configs"
 	"github.com/Dziqha/logistics-delivery-tracker/services/api/models"
 	"github.com/Dziqha/logistics-delivery-tracker/services/api/res"
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/gofiber/fiber/v2"
-	"gorm.io/gorm"
 )
 
 type ShipmentController struct{}
@@ -20,27 +22,26 @@ func (s *ShipmentController) CreateShipment(c *fiber.Ctx) error {
 		res.BadRequestResponse("Invalid request body")
 	}
 
-	newShpment := models.Shipment{
-		SenderName:    req.SenderName,
-		ReceiverName:  req.ReceiverName,
-		OriginAddress: req.OriginAddress,
-		DestAddress:   req.DestAddress,
-		Status:        req.Status,
+	if req.Status != "created" {
+		res.BadRequestResponse("Invalid status")
 	}
-
-	err := configs.DatabaseConnection().Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(&newShpment).Error; err != nil {
-			return err
-		}
-		return nil
-	})
-
+	
+	payload , err := json.Marshal(req)
 	if err != nil {
 		res.InternalServerErrorResponse("Failed to create shipment")
 	}
-
-	response := res.ShipmentResponseData(newShpment)
-	return c.JSON(res.SuccessResponse(fiber.StatusCreated, "Shipment created successfully", response))
+	topic := "shipment"
+	configs.KafkaProducer().Produce(&kafka.Message{
+		TopicPartition: kafka.TopicPartition{
+			Topic:    &topic,
+			Partition: kafka.PartitionAny,
+			Offset: kafka.OffsetBeginning,
+		},
+		Key:   []byte(req.SenderName),
+		Value: payload,
+	}, nil)
+	configs.KafkaProducer().Flush(5000)
+	return c.JSON(res.SuccessResponse(fiber.StatusCreated, "Shipment send to kafka successfully", req))
 
 }
 		

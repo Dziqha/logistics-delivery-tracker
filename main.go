@@ -8,6 +8,7 @@ import (
 	"github.com/Dziqha/logistics-delivery-tracker/services/api/controllers"
 	"github.com/Dziqha/logistics-delivery-tracker/services/api/models"
 	"github.com/Dziqha/logistics-delivery-tracker/services/api/routes"
+	"github.com/Dziqha/logistics-delivery-tracker/services/tracking"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 )
@@ -21,6 +22,9 @@ func main() {
 			AppName: "Logistics Delivery Tracker",
 		},
 	)
+
+
+	go tracking.ProcessTracking()
 
 
 	db := configs.DatabaseConnection()
