@@ -24,17 +24,16 @@ func main() {
 	)
 
 
-	go tracking.ProcessTracking()
-
-
 	db := configs.DatabaseConnection()
 	models.AdminMigrate(db)
 	models.ShipmentMigrate(db)
 	models.LocationMigrate(db)
+	models.NotificationMigrate(db)
 	controllerAdmin := controllers.NewAdminController()
 	controllerShipment := controllers.NewShipmentController()
 	routes.NewAdminRoutes(app, controllerAdmin)
 	routes.NewShipmentRoutes(app, controllerShipment)
+	go tracking.ProcessTracking()
 	app.Listen(":3000")
 	fmt.Println("Server running on port 3000")
 	
