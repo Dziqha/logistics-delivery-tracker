@@ -7,7 +7,7 @@ import (
 )
 
 type Shipment struct {
-	ID            string `json:"id"`
+	ID            int64  `json:"id"`
 	SenderName    string `json:"sender_name" `
 	ReceiverName  string `json:"receiver_name"`
 	OriginAddress string `json:"origin_address"`
@@ -15,7 +15,15 @@ type Shipment struct {
 	Status        string `json:"status"`
 	UpdatedAt     string `json:"updated_at"`
 
-	Locations []LocationUpdate `json:"locationsUpdates,omitempty" gorm:"foreignKey:ShipmentID;references:ID"`
+	Locations []LocationUpdate `json:"locationsUpdates,omitempty" gorm:"foreignKey:Shipment_id;references:ID"`
+}
+
+type ShipmentCreate struct {
+	SenderName    string `json:"sender_name" `
+	ReceiverName  string `json:"receiver_name"`
+	OriginAddress string `json:"origin_address"`
+	DestAddress   string `json:"dest_address" `
+	Status        string `json:"status"`
 }
 
 func (s *Shipment) TableName() string {

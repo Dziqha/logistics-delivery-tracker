@@ -1,6 +1,9 @@
 package controllers
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"time"
 
 	"github.com/Dziqha/logistics-delivery-tracker/configs"
@@ -52,13 +55,17 @@ func (a *AdminController) RegisterAdmin(c *fiber.Ctx) error {
 
 func (a *AdminController) LoginAdmin(c *fiber.Ctx) error {
 	var req models.AdminLogin
+	var admin models.Admin
 	if err := c.BodyParser(&req); err != nil {
 		res.BadRequestResponse("Invalid request body")
 	}
 
-	compirepw := bcrypt.CompareHashAndPassword([]byte(req.Password), []byte(req.Password))
-	err := configs.DatabaseConnection().Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("username = ? AND password = ?", req.Username, compirepw).First(&models.Admin{}).Error; err != nil {
+	err := bcrypt.CompareHashAndPassword([]byte(req.Password), []byte(admin.Password))
+	if err != nil {
+		res.UnauthorizedResponse("Invalid username or password")
+	}
+	err = configs.DatabaseConnection().Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("username = ?", req.Username).First(&models.Admin{}).Error; err != nil {
 			if err == gorm.ErrRecordNotFound {
 				return err
 			}
@@ -69,12 +76,16 @@ func (a *AdminController) LoginAdmin(c *fiber.Ctx) error {
 	if err != nil {
 		res.UnauthorizedResponse("Invalid username or password")
 	}
+	privatekey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		res.InternalServerErrorResponse("Failed to generate private key")
+	}
 
 	token := jwt.New(jwt.SigningMethodES256)
 	claims:= token.Claims.(jwt.MapClaims)
 	claims["username"] = req.Username
 	claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
-	tokenString, err := token.SignedString([]byte("secret"))
+	tokenString, err := token.SignedString(privatekey)
 	if err != nil {
 		res.InternalServerErrorResponse("Failed to generate token")
 	}

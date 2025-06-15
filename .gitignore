@@ -42,3 +42,6 @@ docs/swagger.yaml
 # Coverage/test files
 coverage.*
 *.coverprofile
+
+tmp/
+*.air.*

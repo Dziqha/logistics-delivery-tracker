@@ -15,7 +15,7 @@ type LocationUpdate struct {
 	CreatedAt   string  `json:"created_at"`
 	UpdatedAt   string  `json:"updated_at"`
 
-	Shipment Shipment `json:"shipment" gorm:"foreignKey:ShipmentID;references:ID"`
+	Shipment Shipment `json:"shipment" gorm:"foreignKey:Shipment_id;references:ID"`
 }
 
 func (l *LocationUpdate) TableName() string {

@@ -7,7 +7,10 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
+
+
+func DatabaseConnection() *gorm.DB {
+	var (
 	host     = os.Getenv("DB_HOST")
 	port     = os.Getenv("DB_PORT")
 	user     = os.Getenv("DB_USER")
@@ -18,8 +21,6 @@ var (
 	dsn      = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s TimeZone=%s",
 				host, port, user, password, dbname, sslmode, timezone)
 )
-
-func DatabaseConnection() *gorm.DB {
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		fmt.Printf("Error connecting to the database: %v\n", err)

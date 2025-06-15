@@ -1,6 +1,9 @@
 package res
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"github.com/Dziqha/logistics-delivery-tracker/services/api/models"
+	"github.com/gofiber/fiber/v2"
+)
 
 type ResponseCode struct {
 	Code    int    `json:"code"`
@@ -28,14 +31,13 @@ type LocationResponse struct {
 	UpdatedAt string  `json:"updated_at,omitempty"`
 }
 type ShipmentResponse struct {
-	ID            string `json:"id"`
+	ID            int64 `json:"id"`
 	SenderName    string `json:"sender_name" `
 	ReceiverName  string `json:"receiver_name"`
 	OriginAddress string `json:"origin_address"`
 	DestAddress   string `json:"dest_address" `
 	Status        string `json:"status"`
 	Locations     []LocationResponse `json:"locations,omitempty"`
-	CreatedAt     string `json:"created_at"`
 	UpdatedAt     string `json:"updated_at,omitempty"`
 }
 
@@ -155,16 +157,16 @@ func LocationResponseData(id int64, name string, latitude, longitude float64, sh
 	}
 }
 
-func ShipmentResponseData(id, senderName, receiverName, originAddress, destAddress, status, createdAt, updatedAt string, locations []LocationResponse) *ShipmentResponse {
+func ShipmentResponseData(shipment models.Shipment) *ShipmentResponse {
 	return &ShipmentResponse{
-		ID:            id,
-		SenderName:    senderName,
-		ReceiverName:  receiverName,
-		OriginAddress: originAddress,
-		DestAddress:   destAddress,
-		Status:        status,
-		Locations:     locations,
-		CreatedAt:     createdAt,
-		UpdatedAt:     updatedAt,
+		ID:            shipment.ID,
+		SenderName:    shipment.SenderName,
+		ReceiverName:  shipment.ReceiverName,
+		OriginAddress: shipment.OriginAddress,
+		DestAddress:   shipment.DestAddress,
+		Status:        shipment.Status,
+		Locations:     []LocationResponse{
+		},
+		UpdatedAt:     shipment.UpdatedAt,
 	}
 }
