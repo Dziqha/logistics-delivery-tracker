@@ -1,12 +1,10 @@
 package controllers
 
 import (
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"time"
 
 	"github.com/Dziqha/logistics-delivery-tracker/configs"
+	"github.com/Dziqha/logistics-delivery-tracker/helpers"
 	"github.com/Dziqha/logistics-delivery-tracker/services/api/models"
 	"github.com/Dziqha/logistics-delivery-tracker/services/api/res"
 	"github.com/gofiber/fiber/v2"
@@ -56,42 +54,50 @@ func (a *AdminController) RegisterAdmin(c *fiber.Ctx) error {
 func (a *AdminController) LoginAdmin(c *fiber.Ctx) error {
 	var req models.AdminLogin
 	var admin models.Admin
+	
+	// Parse request body
 	if err := c.BodyParser(&req); err != nil {
-		res.BadRequestResponse("Invalid request body")
+		return c.JSON(res.BadRequestResponse("Invalid request body"))
 	}
 
-	err := bcrypt.CompareHashAndPassword([]byte(req.Password), []byte(admin.Password))
-	if err != nil {
-		res.UnauthorizedResponse("Invalid username or password")
-	}
-	err = configs.DatabaseConnection().Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("username = ?", req.Username).First(&models.Admin{}).Error; err != nil {
-			if err == gorm.ErrRecordNotFound {
-				return err
-			}
+	// Find admin in database
+	err := configs.DatabaseConnection().Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("username = ?", req.Username).First(&admin).Error; err != nil {
+			return err // Return the error to be handled outside
 		}
 		return nil
 	})
 
 	if err != nil {
-		res.UnauthorizedResponse("Invalid username or password")
-	}
-	privatekey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		res.InternalServerErrorResponse("Failed to generate private key")
+		if err == gorm.ErrRecordNotFound {
+			return c.JSON(res.NotFoundResponse("Admin not found"))
+		}
+		return c.JSON(res.InternalServerErrorResponse("Database error"))
 	}
 
-	token := jwt.New(jwt.SigningMethodES256)
-	claims:= token.Claims.(jwt.MapClaims)
-	claims["username"] = req.Username
-	claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
-	tokenString, err := token.SignedString(privatekey)
+	// Compare password (note: parameters were swapped)
+	err = bcrypt.CompareHashAndPassword([]byte(admin.Password), []byte(req.Password))
 	if err != nil {
-		res.InternalServerErrorResponse("Failed to generate token")
+		return c.JSON(res.UnauthorizedResponse("Invalid username or password"))
 	}
+
+	// Generate JWT token
+	privateKey := helpers.GetPrivateKey()
+	token := jwt.New(jwt.SigningMethodES256)
+	claims := token.Claims.(jwt.MapClaims)
+	claims["username"] = admin.Username
+	claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
+
+	signedToken, err := token.SignedString(privateKey)
+	if err != nil {
+		return c.JSON(res.InternalServerErrorResponse("Failed to generate token"))
+	}
+
+	// Prepare response
 	response := res.AdminLoginResponse{
-		Username: req.Username,
-		Token:    tokenString,
+		Username: admin.Username, // Use admin.Username instead of req.Username
+		Token:    signedToken,
 	}
+	
 	return c.JSON(res.SuccessResponse(fiber.StatusOK, "Admin logged in successfully", response))
 }

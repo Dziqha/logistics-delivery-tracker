@@ -26,7 +26,6 @@ type Shipment struct {
 }
 
 type ShipmentCreate struct {
-	SenderName    string  `json:"sender_name" validate:"required"`
 	ReceiverName  string  `json:"receiver_name" validate:"required"`
 	OriginAddress string  `json:"origin_address" validate:"required"`
 	DestAddress   string  `json:"dest_address" validate:"required"`
