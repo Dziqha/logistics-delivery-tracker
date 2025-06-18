@@ -1,8 +1,8 @@
-version: '3.8'
-
 services:
   api:
-    build: .
+    build: 
+      context: .
+      dockerfile: ./Dockerfile
     container_name: logistics-api
     ports:
       - "3000:3000"
@@ -11,9 +11,8 @@ services:
       - rabbitmq
       - postgres
     env_file:
-      - ./env/api.env
+      - .env/api.env
     restart: unless-stopped
-    working_dir: /app
 
   kafka:
     image: bitnami/kafka:latest
@@ -21,7 +20,7 @@ services:
     ports:
       - "9092:9092"
     env_file:
-      - ./env/kafka.env
+      - .env/kafka.env
     depends_on:
       - zookeeper
     restart: unless-stopped
@@ -34,7 +33,7 @@ services:
     ports:
       - "2181:2181"
     env_file:
-      - ./env/zookeeper.env
+      - .env/zookeeper.env
     restart: unless-stopped
     volumes:
       - zookeeper_data:/bitnami/zookeeper
@@ -45,7 +44,7 @@ services:
     ports:
       - "5672:5672"
     env_file:
-      - ./env/rabbitmq.env
+      - .env/rabbitmq.env
     restart: unless-stopped
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
@@ -56,7 +55,7 @@ services:
     ports:
       - "5432:5432"
     env_file:
-      - ./env/postgres.env
+      - .env/postgres.env
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/Dziqha/logistics-delivery-tracker/services/api/models"
@@ -18,7 +19,7 @@ const queueName = "notifications"
 
 func InitRabbitMQ() {
 	var err error
-	conn, err = amqp.Dial("amqp://guest:guest@localhost:5672/")
+	conn, err = amqp.Dial(os.Getenv("RABBITMQ_URL"))
 	if err != nil {
 		log.Fatalf("❌ Failed to connect to RabbitMQ: %v", err)
 	}

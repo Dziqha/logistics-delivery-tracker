@@ -1,37 +1,32 @@
-FROM golang:1.24.1 AS builder
+FROM golang:1.24-bullseye AS builder
 
-WORKDIR /app
+WORKDIR /build
 
-# Install dependencies
 RUN apt-get update && apt-get install -y \
-    git \
-    build-essential \
+    librdkafka-dev \
     pkg-config \
-    librdkafka-dev
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy go.mod files
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy source code
 COPY . .
 
-# Build app
-RUN CGO_ENABLED=1 GOOS=linux go build -o main .
+RUN CGO_ENABLED=1 GOOS=linux go build -a -o main .
 
+FROM debian:bullseye-slim
 
-# Final stage
-FROM alpine:latest
+WORKDIR /app
 
-RUN apk --no-cache add ca-certificates tzdata
-WORKDIR /root/
+RUN apt-get update && apt-get install -y \
+    librdkafka1 \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy the binary from builder
-COPY --from=builder /app/main .
-COPY --from=builder /app/env ./env
+COPY --from=builder /build/main /app/main
 
-# Expose port
+RUN chmod +x /app/main
+
 EXPOSE 3000
 
-# Run the binary
-CMD ["./main"]
+CMD ["/app/main"]

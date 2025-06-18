@@ -1,4 +1,8 @@
-# Binaries
+# =====================
+# 🔧 Go Build Artifacts
+# =====================
+bin/
+build/
 *.exe
 *.exe~
 *.dll
@@ -7,41 +11,55 @@
 *.test
 *.out
 
-# Go build artifacts
-bin/
-build/
-
-# Go modules (biarkan go.mod & go.sum ikut dipush)
+# =====================
+# 📦 Go Vendor Modules
+# =====================
 vendor/
 
-# Logs
+# =====================
+# 🧪 Coverage/Test Files
+# =====================
 *.log
+coverage.*
+*.coverprofile
+*.air.*
+tmp/
 
-# IDE/editor files
+# =====================
+# 💾 Environment Files
+# =====================
+.env/              # ignore actual env dir
+.env               # single .env
+.env.*             # all runtime env files
+!.env.example      # allow .env.example
+!.env.example/     # allow .env.example folder
+
+# =====================
+# 🐳 Docker Related
+# =====================
+docker-compose.override.yml
+
+# =====================
+# 🐘 Postgres Dumps
+# =====================
+*.sql
+*.dump
+
+# =====================
+# 📚 Swagger Generated Docs
+# =====================
+docs/swagger.json
+docs/swagger.yaml
+
+# =====================
+# 🧠 Editor/IDE
+# =====================
 .vscode/
 .idea/
 *.swp
 
-# OS junk
+# =====================
+# 🗑️ OS Junk
+# =====================
 .DS_Store
 Thumbs.db
-
-# Docker stuff
-.env
-*.env.*
-docker-compose.override.yml
-
-# PostgreSQL dumps
-*.sql
-*.dump
-
-# Swagger generated
-docs/swagger.json
-docs/swagger.yaml
-
-# Coverage/test files
-coverage.*
-*.coverprofile
-
-tmp/
-*.air.*
