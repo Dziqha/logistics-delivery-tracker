@@ -3,9 +3,9 @@ version: '3.8'
 services:
   api:
     build: .
-    container_name: api
+    container_name: logistics-api
     ports:
-      - "8080:8080"
+      - "3000:3000"
     depends_on:
       - kafka
       - rabbitmq
@@ -13,10 +13,11 @@ services:
     env_file:
       - ./env/api.env
     restart: unless-stopped
+    working_dir: /app
 
   kafka:
     image: bitnami/kafka:latest
-    container_name: kafka
+    container_name: logistics-kafka
     ports:
       - "9092:9092"
     env_file:
@@ -24,29 +25,34 @@ services:
     depends_on:
       - zookeeper
     restart: unless-stopped
+    volumes:
+      - kafka_data:/bitnami/kafka
 
   zookeeper:
     image: bitnami/zookeeper:latest
-    container_name: zookeeper
+    container_name: logistics-zookeeper
     ports:
       - "2181:2181"
     env_file:
       - ./env/zookeeper.env
     restart: unless-stopped
+    volumes:
+      - zookeeper_data:/bitnami/zookeeper
 
   rabbitmq:
     image: rabbitmq:3-management
-    container_name: rabbitmq
+    container_name: logistics-rabbitmq
     ports:
       - "5672:5672"
-      - "15672:15672"
     env_file:
       - ./env/rabbitmq.env
     restart: unless-stopped
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
 
   postgres:
     image: postgres:14
-    container_name: postgres
+    container_name: logistics-postgres
     ports:
       - "5432:5432"
     env_file:
@@ -57,3 +63,6 @@ services:
 
 volumes:
   postgres_data:
+  kafka_data:
+  zookeeper_data:
+  rabbitmq_data:

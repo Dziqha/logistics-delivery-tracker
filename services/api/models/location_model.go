@@ -13,7 +13,7 @@ type LocationUpdate struct {
 	Latitude    float64   `json:"latitude" gorm:"not null"`
 	Longitude   float64   `json:"longitude" gorm:"not null"`
 	ShipmentID  int64     `json:"shipment_id" gorm:"not null"`
-	Status      string    `json:"status" gorm:"default:'in_transit'"` // picked_up, in_transit, out_for_delivery, delivered
+	// Status      string    `json:"status" gorm:"default:'in_transit'"` // picked_up, in_transit, out_for_delivery, delivered
 	Notes       string    `json:"notes"`
 	CreatedAt   time.Time `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt   time.Time `json:"updated_at" gorm:"autoUpdateTime"`
@@ -26,7 +26,7 @@ type LocationCreate struct {
 	Latitude   float64 `json:"latitude" validate:"required"`
 	Longitude  float64 `json:"longitude" validate:"required"`
 	ShipmentID int64   `json:"shipment_id" validate:"required"`
-	Status     string  `json:"status" validate:"required,oneof=picked_up in_transit out_for_delivery delivered"`
+	// Status     string  `json:"status" validate:"required,oneof=picked_up in_transit out_for_delivery delivered"`
 	Notes      string  `json:"notes"`
 }
 

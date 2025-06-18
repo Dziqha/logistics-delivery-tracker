@@ -11,7 +11,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// ShipmentEvent represents the event data sent from API
 type ShipmentEvent struct {
 	TrackingCode string    `json:"tracking_code"`
 	EventType    string    `json:"event_type"`    // "created" | "status_updated" | "info_updated"
@@ -19,7 +18,6 @@ type ShipmentEvent struct {
 	NewStatus    string    `json:"new_status"`
 	ShipmentID   uint      `json:"shipment_id"`
 	Timestamp    time.Time `json:"timestamp"`
-	// Data tambahan jika diperlukan
 	SenderName     string  `json:"sender_name,omitempty"`
 	ReceiverName   string  `json:"receiver_name,omitempty"`
 	OriginAddress  string  `json:"origin_address,omitempty"`
@@ -33,6 +31,8 @@ func ProcessTracking() {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("⚠️ Tracking processor recovered from panic: %v", r)
+			time.Sleep(5 * time.Second)
+			go ProcessTracking()
 		}
 	}()
 
@@ -51,12 +51,12 @@ func ProcessTracking() {
 	messageCount := 0
 
 	for {
-		log.Printf("🔍 Attempting to read message... (count: %d)", messageCount)
+		log.Printf("🔍 Attempting to read shipment message... (count: %d)", messageCount)
 
 		msg, err := consumer.ReadMessage(5 * time.Second)
 		if err != nil {
 			if err.Error() == "Local: Timed out" {
-				log.Printf("⏱️ No messages in 5s, continuing to listen...")
+				log.Printf("⏱️ No shipment messages in 5s, continuing to listen...")
 				continue
 			}
 			log.Printf("❌ Kafka read error: %v", err)
@@ -64,10 +64,9 @@ func ProcessTracking() {
 		}
 
 		messageCount++
-		log.Printf("📨 Received message #%d from topic: %s, partition: %d, offset: %d", 
+		log.Printf("📨 Received shipment message #%d from topic: %s, partition: %d, offset: %d", 
 			messageCount, *msg.TopicPartition.Topic, msg.TopicPartition.Partition, msg.TopicPartition.Offset)
 
-		// Pastikan hanya memproses topic 'shipment'
 		if *msg.TopicPartition.Topic != "shipment" {
 			log.Printf("⚠️ Skipping message from wrong topic: %s", *msg.TopicPartition.Topic)
 			if _, err := consumer.CommitMessage(msg); err != nil {
@@ -76,48 +75,31 @@ func ProcessTracking() {
 			continue
 		}
 
-		log.Printf("📄 Raw message: %s", string(msg.Value))
+		log.Printf("📄 Raw shipment message: %s", string(msg.Value))
 
-		// PERBAIKAN 1: Parse sebagai ShipmentEvent, bukan Shipment langsung
 		var event ShipmentEvent
 		if err := json.Unmarshal(msg.Value, &event); err != nil {
-			// Fallback: coba parse sebagai Shipment untuk backward compatibility
-			var shipment models.Shipment
-			if err2 := json.Unmarshal(msg.Value, &shipment); err2 != nil {
-				log.Printf("❌ Error parsing message as event or shipment: %v | %v\nPayload: %s", err, err2, msg.Value)
-				if _, err := consumer.CommitMessage(msg); err != nil {
-					log.Printf("❌ Failed to commit error message: %v", err)
-				}
-				continue
+			log.Printf("❌ Error parsing shipment event JSON: %v\nPayload: %s", err, msg.Value)
+			if _, err := consumer.CommitMessage(msg); err != nil {
+				log.Printf("❌ Failed to commit error message: %v", err)
 			}
-			
-			// Convert shipment to event for processing
-			event = ShipmentEvent{
-				TrackingCode: shipment.TrackingCode,
-				EventType:    "legacy", // backward compatibility
-				NewStatus:    shipment.Status,
-				ShipmentID:   uint(shipment.ID),
-				Timestamp:    time.Now(),
-			}
-			log.Printf("⚠️ Processing legacy shipment format as event")
+			continue
 		}
 
-		log.Printf("📦 Processing event: Type=%s, TrackingCode=%s, Status=%s->%s", 
+		log.Printf("📦 Processing shipment event: Type=%s, TrackingCode=%s, Status=%s->%s", 
 			event.EventType, event.TrackingCode, event.OldStatus, event.NewStatus)
 
 		var notification *models.NotificationCreate
 		var shouldSendNotification bool
 		var processedSuccessfully bool
 
-		// PERBAIKAN 2: Hanya proses notifikasi, JANGAN ubah database shipment
 		err = db.Transaction(func(tx *gorm.DB) error {
 			var shipment models.Shipment
 
-			// Ambil shipment yang sudah ada di database
 			if err := tx.Where("tracking_code = ?", event.TrackingCode).First(&shipment).Error; err != nil {
 				if err == gorm.ErrRecordNotFound {
 					log.Printf("⚠️ Shipment with tracking code %s not found in database", event.TrackingCode)
-					return nil // Skip processing jika shipment tidak ada
+					return nil 
 				}
 				log.Printf("❌ Database error while searching shipment: %v", err)
 				return err
@@ -125,10 +107,8 @@ func ProcessTracking() {
 
 			log.Printf("📋 Found shipment in database: ID=%d, Status=%s", shipment.ID, shipment.Status)
 
-			// PERBAIKAN 3: Cek apakah ini event yang valid untuk diproses
 			switch event.EventType {
 			case "created":
-				// Shipment baru dibuat via API
 				if shipment.Status == "created" {
 					shouldSendNotification = true
 					log.Printf("✅ Processing 'created' event for new shipment")
@@ -137,9 +117,7 @@ func ProcessTracking() {
 				}
 
 			case "status_updated":
-				// Status diubah via API
-				if event.OldStatus != "" && shipment.Status == event.NewStatus {
-					// Konfirmasi bahwa status sudah diupdate di database
+				if shipment.Status == event.NewStatus {
 					shouldSendNotification = true
 					log.Printf("✅ Processing 'status_updated' event: %s -> %s", event.OldStatus, event.NewStatus)
 				} else {
@@ -148,27 +126,15 @@ func ProcessTracking() {
 				}
 
 			case "info_updated":
-				// Info shipment diubah tapi status sama
 				log.Printf("ℹ️ Processing 'info_updated' event - no notification needed")
 				processedSuccessfully = true
 				return nil
-
-			case "legacy":
-				// Backward compatibility untuk format lama
-				if shipment.Status == event.NewStatus {
-					log.Printf("ℹ️ Legacy event - status tidak berubah (%s)", shipment.Status)
-					processedSuccessfully = true
-					return nil
-				}
-				shouldSendNotification = true
-				log.Printf("✅ Processing legacy event for status: %s", event.NewStatus)
 
 			default:
 				log.Printf("⚠️ Unknown event type: %s", event.EventType)
 				return nil
 			}
 
-			// PERBAIKAN 4: Buat notifikasi berdasarkan status SAAT INI di database
 			if shouldSendNotification {
 				log.Printf("🔔 Creating notification for status: %s", shipment.Status)
 
@@ -210,7 +176,6 @@ func ProcessTracking() {
 			continue
 		}
 
-		// Kirim notifikasi jika diperlukan
 		if notification != nil && shouldSendNotification && processedSuccessfully {
 			log.Printf("📤 Sending notification to RabbitMQ...")
 			if err := configs.SendNotification(*notification); err != nil {
@@ -223,12 +188,11 @@ func ProcessTracking() {
 				notification != nil, shouldSendNotification, processedSuccessfully)
 		}
 
-		// Commit message setelah berhasil diproses
 		if processedSuccessfully {
 			if _, err := consumer.CommitMessage(msg); err != nil {
 				log.Printf("❌ Failed to commit message: %v", err)
 			} else {
-				log.Printf("✅ Message committed successfully")
+				log.Printf("✅ Shipment message committed successfully")
 			}
 		}
 

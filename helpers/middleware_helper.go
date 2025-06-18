@@ -19,7 +19,6 @@ func AuthMiddleware() fiber.Handler {
             })
         }
 
-        // Format: Bearer <token>
         bearerToken := strings.Split(authHeader, " ")
         if len(bearerToken) != 2 || strings.ToLower(bearerToken[0]) != "bearer" {
             return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -30,14 +29,11 @@ func AuthMiddleware() fiber.Handler {
 
         tokenString := bearerToken[1]
 
-        // Parse JWT token with ECDSA public key
         token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-            // Validate the signing method is ECDSA
             if _, ok := token.Method.(*jwt.SigningMethodECDSA); !ok {
                 return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
             }
             
-            // Return the ECDSA public key for verification
             return GetPublicKey(), nil
         })
 
@@ -49,9 +45,7 @@ func AuthMiddleware() fiber.Handler {
             })
         }
 
-        // Validate token and extract claims
         if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-            // Check token expiration
             if exp, ok := claims["exp"].(float64); ok {
                 if jwt.NewNumericDate(time.Now()).Unix() > int64(exp) {
                     return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -61,10 +55,8 @@ func AuthMiddleware() fiber.Handler {
                 }
             }
 
-            // Store claims in context for use in handlers
             c.Locals("claims", claims)
             
-            // Extract and store username for easier access
             if username, exists := claims["username"]; exists {
                 c.Locals("username", username)
             }

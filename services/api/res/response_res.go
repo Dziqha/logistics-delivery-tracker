@@ -42,6 +42,18 @@ type ShipmentResponse struct {
 	UpdatedAt     time.Time `json:"updated_at,omitempty"`
 }
 
+type NotificationResponse struct {
+	ID          int64     `json:"id"`
+	ShipmentID  int64     `json:"shipment_id"`
+	Type        string    `json:"type"`
+	Title       string    `json:"title"`
+	Message     string    `json:"message"`
+	IsRead      bool      `json:"is_read"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	TrackingCodeShipment string    `json:"tracking_code"`
+}
+
 func SuccessResponse(code int, message string, data any) *ResponseCode {
 	return &ResponseCode{
 		Code:    code,

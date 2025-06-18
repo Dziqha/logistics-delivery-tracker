@@ -14,7 +14,7 @@ type Shipment struct {
 	ReceiverName  string    `json:"receiver_name" gorm:"not null"`
 	OriginAddress string    `json:"origin_address" gorm:"not null"`
 	DestAddress   string    `json:"dest_address" gorm:"not null"`
-	Status        string    `json:"status" gorm:"default:'created'"` // created, picked_up, in_transit, out_for_delivery, delivered, cancelled
+	Status        string    `json:"status" gorm:"default:'created'"` // created, packaged, picked_up, shipped, transit_final, delivered, done, cancelled
 	Priority      string    `json:"priority" gorm:"default:'normal'"` // low, normal, high, urgent
 	Weight        float64   `json:"weight"`
 	Dimensions    string    `json:"dimensions"`

@@ -47,6 +47,8 @@ func KafkaShipmentConsumer() *kafka.Consumer {
 		"group.id":          groupID,
 		"auto.offset.reset": "earliest",
 		"enable.auto.commit": false,
+		"session.timeout.ms": 30000,
+		"heartbeat.interval.ms": 3000,
 	})
 
 	if err != nil {
@@ -81,6 +83,8 @@ func KafkaLocationConsumer() *kafka.Consumer {
 		"group.id":          groupID,
 		"auto.offset.reset": "earliest",
 		"enable.auto.commit": false,
+		"session.timeout.ms": 30000,
+		"heartbeat.interval.ms": 3000,
 	})
 
 	if err != nil {
@@ -115,6 +119,8 @@ func KafkaNotificationConsumer() *kafka.Consumer {
 		"group.id":          groupID,
 		"auto.offset.reset": "earliest",
 		"enable.auto.commit": false,
+		"session.timeout.ms": 30000,
+		"heartbeat.interval.ms": 3000,
 	})
 
 	if err != nil {
