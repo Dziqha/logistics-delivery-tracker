@@ -64,7 +64,7 @@ A comprehensive logistics delivery tracking system built with **Go**, **Kafka**,
 
 ### 🐳 Run with Docker Compose
 ```bash
-git clone <repository-url>
+git clone https://github.com/Dziqha/logistics-delivery-tracker.git
 ```
 
 ```bash
